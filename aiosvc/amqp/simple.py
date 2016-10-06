@@ -16,7 +16,8 @@ aioamqp.channel.logger = logger
 
 class Connection(aiosvc.Componet):
 
-    def __init__(self, loop, url='amqp://guest:guest@localhost:5672/', heartbeat=1, reconnect_timeout=1, declare=None):
+    def __init__(self, url='amqp://guest:guest@localhost:5672/', heartbeat=1, reconnect_timeout=1, declare=None,
+                 start_priority=2, loop: asyncio.AbstractEventLoop = None):
         """
 
         :param loop: asyncio.AbstractEventLoop
@@ -37,7 +38,7 @@ class Connection(aiosvc.Componet):
                 ],
             }
         """
-        super().__init__(loop)
+        super().__init__(loop=loop, start_priority=start_priority)
         self._url = url
         self._heartbeat = heartbeat
         self._declare = declare
@@ -175,8 +176,8 @@ class Connection(aiosvc.Componet):
 
 class Publisher(Connection):
 
-    def __init__(self, loop, exchange, publish_timeout=5, try_publish_interval=.9, *args, **kwargs):
-        super().__init__(loop, *args, **kwargs)
+    def __init__(self, exchange, publish_timeout=5, try_publish_interval=.9, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._exchange_name = exchange
         self._publish_timeout = publish_timeout
         self._try_publish_interval = try_publish_interval
@@ -226,8 +227,8 @@ class Publisher(Connection):
 
 class Consumer(Connection):
 
-    def __init__(self, loop, queue=None, prefetch_count=1, *args, **kwargs):
-        super().__init__(loop, *args, **kwargs)
+    def __init__(self, queue=None, prefetch_count=1, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._queue_name = queue or str(uuid.uuid4())
         self._prefetch_count = prefetch_count
         self._consumer_tag = None

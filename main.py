@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import logging
 import asyncio
 import aiosvc
@@ -95,14 +97,14 @@ if __name__ == "__main__":
     app.attach(
         'apub',
         aiosvc.amqp.Publisher(
-            loop=loop,
+            # loop=loop,
             exchange='exchange_1'
         )
     )
     app.attach(
         'acons',
         Consumer(
-            loop=loop,
+            # loop=loop,
             queue='queue_1'
 
         )
@@ -149,7 +151,7 @@ if __name__ == "__main__":
     app.attach(
         'db',
         aiosvc.db.PgPool(
-            loop=loop,
+            # loop=loop,
             dsn="postgresql://postgres:postgres@localhost/ars",
             max_size=10,
             min_size=2

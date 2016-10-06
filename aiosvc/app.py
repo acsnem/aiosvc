@@ -12,8 +12,8 @@ class Componet(object):
     :type _app: Application
     """
 
-    def __init__(self, loop=None, start_priority=1):
-        self._loop = loop or asyncio.get_event_loop()
+    def __init__(self, *, loop=None, start_priority=1):
+        self._loop = loop
         self._app = None
         self._start_priority = start_priority
 

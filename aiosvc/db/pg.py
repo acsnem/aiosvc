@@ -5,9 +5,9 @@ from aiosvc import Componet
 
 class Pool(Componet):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, dsn: str = None, min_size: int = 10, max_size: int = 10,
-                 max_queries: int = 50000, setup=None, start_priority=1, **connect_kwargs):
-        super().__init__(loop, start_priority)
+    def __init__(self, dsn: str = None, min_size: int = 10, max_size: int = 10, max_queries: int = 50000, setup=None,
+                 start_priority=1, loop: asyncio.AbstractEventLoop = None, **connect_kwargs):
+        super().__init__(loop=loop, start_priority=start_priority)
         self._dsn = dsn
         self._min_size = min_size
         self._max_size = max_size

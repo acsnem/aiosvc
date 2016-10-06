@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import aiohttp.web
 from aiosvc import Componet
 
@@ -8,8 +9,9 @@ logger = logging.getLogger("aiosvc")
 
 class Server(Componet):
 
-    def __init__(self, handlers, host='localhost', port=8888, loop=None, start_priority=10, stop_timeout=60.0):
-        super().__init__(loop, start_priority)
+    def __init__(self, handlers, host='localhost', port=8888, stop_timeout=60.0, start_priority=5,
+                 loop: asyncio.AbstractEventLoop = None):
+        super().__init__(loop=loop, start_priority=start_priority)
         self._stop_timeout = stop_timeout
         self._host = host
         self._port = port
