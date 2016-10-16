@@ -92,7 +92,7 @@ class TestRedis:
 
     @pytest.mark.asyncio
     async def test_pool(self, event_loop):
-        timeout = 0.2
+        timeout = config.getfloat('redis', 'timeout')
         db = aiosvc.db.redis.Pool(
             address=(config.get("redis", "host"), config.get("redis", "port")),
             loop=event_loop, min_size=1, max_size=2)

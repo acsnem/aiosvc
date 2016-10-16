@@ -6,6 +6,16 @@ from aiohttp import web
 from .base import RpcHandler, RpcError
 
 
+_err_mapping = {
+    RpcError.RPC_ERR_INTERNAL_ERROR: (-32603, "Internal error"),
+    RpcError.RPC_ERR_PARSE: (-32700, "Parse error"),
+    RpcError.RPC_ERR_INVALID_REQUEST: (-32600, "Invalid Request"),
+    RpcError.RPC_ERR_METHOD_NOT_FOUND: (-32601, "Method not found"),
+    RpcError.RPC_ERR_INVALID_PARAMS_FORMAT: (-32602, "Invalid params"),
+    RpcError.RPC_ERR_INVALID_PARAMS: (-32602, "Invalid params"),
+}
+
+
 class JsonRpcHandler(RpcHandler):
 
     def __init__(self, *args, **kwargs):
@@ -25,7 +35,7 @@ class JsonRpcHandler(RpcHandler):
         try:
             data = json.loads(body.decode())
         except json.decoder.JSONDecodeError as e:
-            return await self._respnse(self._format_error(JsonRpcError.ERR_PARSE))
+            return await self._respnse(self._format_error(RpcError.RPC_ERR_PARSE))
 
         is_batch = True
         if not isinstance(data, list):
@@ -34,7 +44,7 @@ class JsonRpcHandler(RpcHandler):
 
         for req in data:
             if not isinstance(req, dict):
-                return await self._respnse(self._format_error(JsonRpcError.ERR_INVALID_REQUEST))
+                return await self._respnse(self._format_error(RpcError.RPC_ERR_INVALID_REQUEST))
         results = []
         if self._concurrent_batch_call:
             reqs = []
@@ -63,18 +73,20 @@ class JsonRpcHandler(RpcHandler):
                 "id": request_id,
                 "result": result
             }
-        except RpcError as e:
-            code = JsonRpcError.get_protocol_code(e)
-            return self._format_error(code, request_id)
+        except Exception as e:
+            return self._format_error(e, request_id)
 
     @staticmethod
-    def _format_error(code, request_id=None):
+    def _format_error(e, request_id=None):
+        if not isinstance(e, RpcError):
+            e = RpcError(RpcError.RPC_ERR_INTERNAL_ERROR)
+        code, message = _err_mapping.get(e.code)
         return {
             "jsonrpc": "2.0",
             "id": request_id,
             "error": {
                 "code": code,
-                "message": JsonRpcError.get_message(code)
+                "message": message
             },
         }
 
@@ -83,7 +95,7 @@ class JsonRpcHandler(RpcHandler):
         if 'id' in req_data:
             request_id = req_data["id"]
         if 'method' not in req_data or not isinstance(req_data["method"], str):
-            raise JsonRpcError(JsonRpcError.ERR_INVALID_REQUEST,
+            raise RpcError(RpcError.RPC_ERR_INVALID_REQUEST,
                                details="method not given or it's not instance of string")
         if 'params' in req_data:
             params = req_data['params']
@@ -93,47 +105,3 @@ class JsonRpcHandler(RpcHandler):
 
     async def _add_routes(self):
         self._http_app.router.add_route("POST", self._route, self._handle_request)
-
-
-class JsonRpcError(RpcError):
-
-    # Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.
-    ERR_PARSE = -32700
-    # The JSON sent is not a valid Request object.
-    ERR_INVALID_REQUEST = -32600
-    # The method does not exist / is not available.
-    ERR_METHOD_NOT_FOUND = 32601
-    # Invalid method parameter(s).
-    ERR_INVALID_PARAMS = -32602
-    # Internal JSON-RPC error.
-    ERR_INTERNAL_ERROR = -32603
-    # -32000 to -32099	Server error	Reserved for implementation-defined server-errors.
-
-    err_mapping = {
-        RpcError.RPC_ERR_INTERNAL_ERROR: ERR_INTERNAL_ERROR,
-        RpcError.RPC_ERR_PARSE: ERR_PARSE,
-        RpcError.RPC_ERR_INVALID_REQUEST: ERR_INVALID_REQUEST,
-        RpcError.RPC_ERR_METHOD_NOT_FOUND: ERR_METHOD_NOT_FOUND,
-        RpcError.RPC_ERR_INVALID_PARAMS_FORMAT: ERR_INVALID_REQUEST,
-        RpcError.RPC_ERR_INVALID_PARAMS: ERR_INVALID_PARAMS,
-    }
-
-    @staticmethod
-    def get_protocol_code(e):
-
-        if isinstance(e, JsonRpcError):
-            return e.code
-        elif isinstance(e, RpcError):
-            return JsonRpcError.err_mapping.get(e.code)
-        else:
-            return JsonRpcError.ERR_INTERNAL_ERROR
-
-    @staticmethod
-    def get_message(code):
-        return {
-            JsonRpcError.ERR_PARSE: "Parse error",
-            JsonRpcError.ERR_INVALID_REQUEST: "Invalid Request  ",
-            JsonRpcError.ERR_METHOD_NOT_FOUND: "Method not found",
-            JsonRpcError.ERR_INVALID_PARAMS: "Invalid params",
-            JsonRpcError.ERR_INTERNAL_ERROR: "Internal error",
-        }.get(code, "Server error")

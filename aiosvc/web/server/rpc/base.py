@@ -1,9 +1,12 @@
+import asyncio
 import types
 import aiosvc
 from aiosvc.web.server import SimpleHandler
 from aiohttp import web
 
+
 class RpcHandler(SimpleHandler):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # raise exception if caught unexpected parameter
@@ -37,7 +40,7 @@ class RpcHandler(SimpleHandler):
             if isinstance(bytes, bytearray):
                 return bytes.decode("UTF-8")
             return bytes.decode("UTF-8")
-        except:
+        except Exception:
             return str(bytes)
 
     @staticmethod
@@ -50,7 +53,10 @@ class RpcHandler(SimpleHandler):
         kwargs = RpcHandler._get_params(method, params, error_on_non_exist_params)
         if hasattr(obj, '_before_call'):
             method, kwargs = await obj._before_call(method, kwargs, request)
-        result = await method(**kwargs)
+        # print(method, type(method))
+        result = method(**kwargs)
+        if asyncio.iscoroutine(result):
+            return await result
         return result
 
     @staticmethod
@@ -114,7 +120,7 @@ class RpcError(Exception):
 
     def __str__(self):
         details = ('\n' + str(self.details)) if self.details is not None else ''
-        return 'JsonRpcError(%s): %s%s' % (self.code, self.message, details)
+        return 'RpcError(%s): %s%s' % (self.code, self.message, details)
 
     @staticmethod
     def get_message(code):

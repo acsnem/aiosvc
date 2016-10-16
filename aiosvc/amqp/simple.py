@@ -176,8 +176,8 @@ class Connection(aiosvc.Componet):
 
 class Publisher(Connection):
 
-    def __init__(self, exchange, publish_timeout=5, try_publish_interval=.9, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, exchange, *, publish_timeout=5, try_publish_interval=.9, **kwargs):
+        super().__init__(**kwargs)
         self._exchange_name = exchange
         self._publish_timeout = publish_timeout
         self._try_publish_interval = try_publish_interval
